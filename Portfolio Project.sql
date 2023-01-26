@@ -1,3 +1,10 @@
+/*
+Covid 19 data exploration
+
+Skills used: Joins, CTE's, Temp Tables, Windows functionis, Aggregate functions , creating views, coverting data types
+
+*/
+
 SELECT * FROM [Portfolio Project]..CovidVaccinations
 order by 3,4
 
@@ -67,8 +74,7 @@ Group by date
 order by 1,2
 
 
--- Total population vs vaccinations
-
+-- Total New vaccinations per day 
 SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations
 FROM [Portfolio Project]..CovidDeaths dea
 JOIN [Portfolio Project]..CovidVaccinations vac
@@ -78,7 +84,10 @@ WHERE dea.continent is not null
 Order By 2, 3
 
 
--- Total New vaccinations per day 
+
+
+-- Total population vs vaccinations
+-- Show percentage of population that has received at least one dose of covid vaccine 
 SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations
 , SUM(CONVERT(bigint, vac.new_vaccinations)) over (Partition by dea.location ORDER by dea.location, dea.date) as Rolling_people_vaccinated
 FROM [Portfolio Project]..CovidDeaths dea
@@ -88,6 +97,19 @@ JOIN [Portfolio Project]..CovidVaccinations vac
 WHERE dea.continent is not null 
 Order By 2, 3
 
+-- total cases vs age 
+SELECT dea.location, SUM(dea.total_cases) as TotalCases, vac.aged_65_older, vac.aged_70_older, (dea.total_cases - vac.aged_65_older - vac.aged_70_older) as PeopleBefore65
+FROM [Portfolio Project]..CovidDeaths dea
+JOIN [Portfolio Project]..CovidVaccinations vac
+	ON dea.location = vac.location 
+	and dea.date = vac.date
+GROUP by dea.location, dea.total_cases, vac.aged_65_older, vac.aged_70_older
+
+;
+
+
+
+-- Using CTE to perform Calculation on Partition By in previous query
 
 -- 
 WITH PopvsVac (continent, location, date, population, new_vaccinations, Rolling_people_vaccinated)
@@ -107,7 +129,7 @@ SELECT *, (Rolling_people_vaccinated/population)*100
 FROM PopvsVac
 
 
--- TEMP Tables
+-- Use TEMP Tables to perform Calculation on Partition By in previous query
 DROP Table if exists #PercentPopulationVaccinated
 CREATE TABLE #PercentPopulationVaccinated
 (
@@ -136,4 +158,6 @@ JOIN [Portfolio Project]..CovidVaccinations vac
 	ON dea.location = vac.location 
 	and dea.date = vac.date
 WHERE dea.continent is not null 
+
+
 
